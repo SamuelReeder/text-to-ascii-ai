@@ -9,7 +9,10 @@ from typing import Optional, Tuple
 from tqdm import tqdm
 import torch
 from torchvision import datasets, transforms
+from PIL import Image
 
+IMAGES_DIR="orig_imgs"
+ASCII_DIR="ascii_txt"
 
 def run_ascii_converter(
     bin_name: str,
@@ -21,11 +24,11 @@ def run_ascii_converter(
     cmd = [bin_name, str(img_path), "-W", str(width), "--save-txt", str(ascii_txt_dir)]
     if extra_args:
         cmd.extend(extra_args)
-    try:
-        res = subprocess.run(cmd, check=False, capture_output=True, text=True)
-        return (res.returncode == 0), res.stdout, res.stderr
-    except Exception as e:
-        return False, "", str(e)
+
+    res = subprocess.run(cmd, check=False, capture_output=True, text=True)
+
+    if not res.returncode == 0:
+        raise Exception(f"aic failed: {res.stderr}\n")
 
 
 def save_manifest_row(
@@ -36,27 +39,27 @@ def save_manifest_row(
     label: int,
     orig_image: Path,
     ascii_text: Path,
-    width_chars: int,
-    ascii_rows: int,
+    ascii_width: int,
+    ascii_height: int,
 ):
     row = {
         "id": uid,
         "split": split,
         "label": int(label),
-        "image_path": str(orig_image.as_posix()),
+        "orig_img_path": str(orig_image.as_posix()),
         "ascii_txt_path": str(ascii_text.as_posix()),
-        "ascii_width_chars": width_chars,
-        "ascii_height_rows": ascii_rows,
+        "ascii_width": ascii_width,
+        "ascii_height": ascii_height,
     }
     fh.write(json.dumps(row) + "\n")
 
 
 def prepare_dirs(root: Path):
     for p in [
-        root / "train" / "images",
-        root / "train" / "ascii_txt",
-        root / "test" / "images",
-        root / "test" / "ascii_txt",
+        root / "train" / IMAGES_DIR,
+        root / "train" / ASCII_DIR,
+        root / "test" / IMAGES_DIR,
+        root / "test" / ASCII_DIR,
     ]:
         p.mkdir(parents=True, exist_ok=True)
 
@@ -77,7 +80,6 @@ def tensor_to_png(tensor, out_path: Path):
     """
     MNIST tensors are [1, 28, 28] in [0,1]. Save as 8-bit PNG.
     """
-    from PIL import Image
     arr = (tensor.squeeze().numpy() * 255).astype("uint8")
     img = Image.fromarray(arr, mode="L")  # grayscale
     img.save(out_path)
@@ -114,7 +116,6 @@ def main():
 
     manifest_train = (out_root / "train_manifest.jsonl").open("w", encoding="utf-8")
     manifest_test = (out_root / "test_manifest.jsonl").open("w", encoding="utf-8")
-    errors_log = (out_root / "errors.log").open("w", encoding="utf-8")
 
     extra_args = [a for a in args.extra_aic_args.split() if a]
 
@@ -126,39 +127,41 @@ def main():
         n = len(ds) if limit is None else min(limit, len(ds))
         pbar = tqdm(range(n), desc=f"Processing {split}", unit="img")
 
-        ascii_txt_dir = out_root / split / "ascii_txt"
-        images_dir = out_root / split / "images"
+        ascii_txt_dir = out_root / split / ASCII_DIR
+        images_dir = out_root / split / IMAGES_DIR
 
         for idx in pbar:
             img_t, label = ds[idx]  # tensor [1,28,28], label int
             uid = f"{split}-{idx:06d}"
 
             img_path = images_dir / f"{uid}.png"
-            # The CLI writes <image-stem>-ascii-art.txt into ascii_txt_dir
             ascii_txt_path = ascii_txt_dir / f"{uid}-ascii-art.txt"
 
+            # Saves original tensors as images
             try:
                 tensor_to_png(img_t, img_path)
             except Exception as e:
-                errors_log.write(f"[{uid}] save_png failed: {e}\n")
-                continue
+                print(f"[{uid}] save_png failed: {e}\n")
+                return
 
-            ok, _stdout, stderr_txt = run_ascii_converter(
-                args.aic_bin, img_path, args.width, ascii_txt_dir, extra_args
-            )
-            if not ok:
-                errors_log.write(f"[{uid}] aic failed: {stderr_txt}\n")
-                continue
+            try: 
+                run_ascii_converter(
+                    args.aic_bin, img_path, args.width, ascii_txt_dir, extra_args
+                )
+            except Exception as e:
+                print(f"[{uid}] run_ascii_converter failed: {e}\n")
+                return
+            
 
             if not ascii_txt_path.exists():
-                errors_log.write(f"[{uid}] expected TXT not found at {ascii_txt_path}\n")
-                continue
+                print(f"[{uid}] expected TXT not found at {ascii_txt_path}\n")
+                return
 
             try:
                 ascii_text = ascii_txt_path.read_text(encoding="utf-8")
             except Exception as e:
-                errors_log.write(f"[{uid}] read_txt failed: {e}\n")
-                continue
+                print(f"[{uid}] read_txt failed: {e}\n")
+                return
 
             ascii_rows = ascii_text.strip("\n").count("\n") + 1 if ascii_text.strip("\n") else 0
 
@@ -169,19 +172,16 @@ def main():
                 label=int(label),
                 orig_image=img_path,
                 ascii_text=ascii_txt_path,
-                width_chars=args.width,
-                ascii_rows=ascii_rows,
+                ascii_width=args.width,
+                ascii_height=ascii_rows,
             )
 
     manifest_train.close()
     manifest_test.close()
-    errors_log.close()
 
     print("\nDone")
     print(f"- Train manifest: {out_root/'train_manifest.jsonl'}")
     print(f"- Test manifest:  {out_root/'test_manifest.jsonl'}")
-    print(f"- Errors:         {out_root/'errors.log'}")
-
 
 if __name__ == "__main__":
     main()
