@@ -20,7 +20,7 @@ def run_ascii_converter(
     width: int,
     ascii_txt_dir: Path,
     extra_args: Optional[list] = None,
-) -> Tuple[bool, str, str]:
+) -> None:
     cmd = [bin_name, str(img_path), "-W", str(width), "--save-txt", str(ascii_txt_dir)]
     if extra_args:
         cmd.extend(extra_args)
