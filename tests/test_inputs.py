@@ -79,10 +79,11 @@ def test_shapes_have_ink_and_background_is_empty():
 def test_neural_engine_all_inputs():
     """The trained AsciiNet handles the same odd inputs, at small and large widths."""
     import pytest
-    from asciiart.neural import DEFAULT_CKPT, NeuralConverter
-    if not DEFAULT_CKPT.exists():
-        pytest.skip("no AsciiNet checkpoint (train one with scripts/train.py)")
-    c = NeuralConverter()
+    from asciiart.neural import NeuralConverter, find_checkpoint
+    ckpt = find_checkpoint()
+    if ckpt is None:
+        pytest.skip("no AsciiNet weights (train them with scripts/train.py, or go online to download them)")
+    c = NeuralConverter(ckpt)
     for name, img in cases().items():
         for cols in (16, 40, 100):
             for focus in ("auto", "off"):

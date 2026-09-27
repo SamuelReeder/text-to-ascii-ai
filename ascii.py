@@ -51,18 +51,18 @@ def quiet_libraries():
 
 
 def make_converter(args, Converter):
-    """The trained network by default; the pipeline for options only it has, or without a checkpoint."""
-    from asciiart.neural import DEFAULT_CKPT, NeuralConverter
-    ckpt = Path(args.checkpoint) if args.checkpoint else DEFAULT_CKPT
+    """The trained network by default (local checkpoint, else the released weights); the pipeline for
+    options only it has, or when no weights are available."""
+    from asciiart.neural import HF_REPO, NeuralConverter, find_checkpoint
     pipeline_only = args.fill != "match" or args.no_strokes or args.focus in ("select", "on")
-    engine = args.engine
-    if engine == "auto":
-        engine = "net" if ckpt.exists() and not pipeline_only else "pipeline"
-    if engine == "net":
-        if not ckpt.exists():
-            sys.exit(f"error: no AsciiNet checkpoint at {ckpt} (train one with scripts/train.py, or use "
-                     "--engine pipeline)")
-        return NeuralConverter(ckpt, args.device)
+    engine = "pipeline" if args.engine == "auto" and pipeline_only else args.engine
+    if engine in ("auto", "net"):
+        ckpt = Path(args.checkpoint) if args.checkpoint else find_checkpoint()
+        if ckpt is not None and ckpt.exists():
+            return NeuralConverter(ckpt, args.device)
+        if engine == "net":
+            sys.exit(f"error: no AsciiNet checkpoint at {ckpt or 'checkpoints/asciinet.pt'} and none from {HF_REPO} "
+                     "(train one with scripts/train.py, or use --engine pipeline)")
     return Converter(args.device, matte=not args.fast, selector=not args.fast)
 
 
@@ -89,8 +89,9 @@ def main():
     ap.add_argument("--device", default=None)
     ap.add_argument("--engine", choices=["auto", "net", "pipeline"], default="auto",
                     help="net: our trained AsciiNet (one forward pass); pipeline: BiRefNet matte + glyph "
-                         "matching (the net's teacher). auto: net when its checkpoint exists")
-    ap.add_argument("--checkpoint", default=None, help="AsciiNet checkpoint (default: checkpoints/asciinet.pt)")
+                         "matching (the net's teacher). auto: net unless an option needs the pipeline")
+    ap.add_argument("--checkpoint", default=None,
+                    help="AsciiNet .pt or .safetensors (default: checkpoints/asciinet.pt, else the released weights)")
     ap.add_argument("--t2i", choices=["sana-sprint", "sd-turbo"], default="sana-sprint",
                     help="prompt mode: text->image model (sd-turbo needs less VRAM)")
     ap.add_argument("--fast", action="store_true", help="pipeline engine: skip the BiRefNet matte (no focus); the net is already fast")

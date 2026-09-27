@@ -3,6 +3,8 @@
 Same interface as pipeline.Converter (ids / text / colorize), so the CLI and the evaluation
 scripts can use either engine.
 """
+import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -15,18 +17,44 @@ from .model import AsciiNet, ctx_size
 from .pipeline import CHARSET, Converter, Options
 
 DEFAULT_CKPT = Path(__file__).resolve().parents[1] / "checkpoints" / "asciinet.pt"
+HF_REPO = "SamuelReeder/asciinet"  # the released weights: model.safetensors + config.json
+
+
+def find_checkpoint() -> Path | None:
+    """checkpoints/asciinet.pt if you trained one, else the released weights (downloaded once, then cached)."""
+    if DEFAULT_CKPT.exists():
+        return DEFAULT_CKPT
+    try:
+        from huggingface_hub import hf_hub_download
+        hf_hub_download(HF_REPO, "config.json")
+        return Path(hf_hub_download(HF_REPO, "model.safetensors"))
+    except Exception as e:  # offline, or the Hub is unreachable
+        print(f"warning: could not fetch AsciiNet weights from {HF_REPO} ({type(e).__name__})", file=sys.stderr)
+        return None
+
+
+def load_checkpoint(ckpt: str | Path) -> tuple[dict, str, int | None]:
+    """(state dict, charset, training step) from a train.py .pt or a released .safetensors (+ config.json beside it)."""
+    ckpt = Path(ckpt)
+    if ckpt.suffix == ".safetensors":
+        from safetensors.torch import load_file
+        cfg = json.loads((ckpt.parent / "config.json").read_text())
+        return load_file(ckpt), cfg["chars"], cfg.get("step")
+    ck = torch.load(ckpt, map_location="cpu", weights_only=False)
+    return ck["ema"] if "ema" in ck else ck["model"], ck.get("chars", CHARSET), ck.get("step")
 
 
 class NeuralConverter:
-    def __init__(self, ckpt: str | Path = DEFAULT_CKPT, device: str | None = None):
+    def __init__(self, ckpt: str | Path | None = None, device: str | None = None):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        ck = torch.load(ckpt, map_location="cpu", weights_only=False)
-        self.chars = ck.get("chars", CHARSET)
+        ckpt = ckpt or find_checkpoint()
+        if ckpt is None:
+            raise FileNotFoundError(f"no AsciiNet checkpoint at {DEFAULT_CKPT}, and none downloaded from {HF_REPO}")
+        state, self.chars, self.step = load_checkpoint(ckpt)
         self.model = AsciiNet(len(self.chars))
-        self.model.load_state_dict(ck["ema"] if "ema" in ck else ck["model"])
+        self.model.load_state_dict(state)
         self.model.to(self.device).eval()
         self.atlas = glyph_atlas(self.chars).to(self.device)
-        self.step = ck.get("step")
 
     @torch.no_grad()
     def ids(self, img, opt: Options = Options(), rows: int | None = None, return_info=False):

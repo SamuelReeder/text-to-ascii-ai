@@ -72,10 +72,10 @@ def make_method_chars(name, device, chars):
             return lut[conv.ids(img, Options(cols=cols, focus=focus, **kw), rows=rows)]
     elif name.startswith("net"):
         # net[:checkpoint] -> the trained AsciiNet
-        from asciiart.neural import DEFAULT_CKPT, NeuralConverter
+        from asciiart.neural import NeuralConverter
         from asciiart.pipeline import Options
         parts = name.split(":", 1)
-        conv = NeuralConverter(parts[1] if len(parts) > 1 else DEFAULT_CKPT, device)
+        conv = NeuralConverter(parts[1] if len(parts) > 1 else None, device)
         lut = torch.tensor([PRINTABLE.index(c) for c in conv.chars])
         def f(rec, img, cols, rows):
             return lut[conv.ids(img, Options(cols=cols), rows=rows)]

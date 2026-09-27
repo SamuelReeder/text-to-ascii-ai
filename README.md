@@ -54,14 +54,16 @@ python ascii.py photo.jpg -o art.txt --png art.png
 ```python
 from asciiart.neural import NeuralConverter
 from asciiart.pipeline import Options
-net = NeuralConverter()                        # checkpoints/asciinet.pt
+net = NeuralConverter()                        # checkpoints/asciinet.pt, else the released weights
 print(net.text("photo.jpg", Options(cols=100)))
 ```
 
-Images need only the 112 MB AsciiNet checkpoint, `checkpoints/asciinet.pt`: **13 ms per image at
-32 columns, 24 ms at 80, 0.3 GB VRAM** on an RTX 5080. The checkpoint is not in git; train it
-(see *Reproducing*) or copy it in. Without it, the CLI falls back to the pipeline engine (~110 ms
-and 1.6 GB per image, plus BiRefNet and SigLIP, ~1.2 GB downloaded from Hugging Face on first use).
+Images need only the 112 MB AsciiNet weights: **13 ms per image at 32 columns, 24 ms at 80,
+0.3 GB VRAM** on an RTX 5080. They are downloaded from
+[SamuelReeder/asciinet](https://huggingface.co/SamuelReeder/asciinet) on first use, unless you
+trained your own (`checkpoints/asciinet.pt`, see *Reproducing*). If neither is available, the CLI
+falls back to the pipeline engine (~110 ms and 1.6 GB per image, plus BiRefNet and SigLIP, ~1.2 GB
+downloaded from Hugging Face on first use).
 Prompts also use SANA-Sprint 0.6B with its Gemma-2-2B text encoder (~7 GB download; ≈9 GB peak
 VRAM while encoding the prompt, ≈4 GB after) and SigLIP. Everything also runs on CPU, slower.
 
@@ -269,8 +271,8 @@ The experiments are kept in `asciiart/experimental/` and `scripts/experimental/`
 | `--background dark\|light` | dark | your terminal/page background |
 | `--invert auto\|yes\|no` | auto | auto: plain white backgrounds become empty space |
 | `--focus auto\|select\|on\|off` | auto | fade background clutter around the subject |
-| `--engine auto\|net\|pipeline` | auto | AsciiNet (when `checkpoints/asciinet.pt` exists) or the pipeline |
-| `--checkpoint FILE` | | another AsciiNet checkpoint |
+| `--engine auto\|net\|pipeline` | auto | AsciiNet (yours in `checkpoints/`, else the released weights) or the pipeline |
+| `--checkpoint FILE` | | another AsciiNet checkpoint (`.pt` or `.safetensors`) |
 | `--fill match\|ramp` | match | pipeline: glyphs chosen by shape, or the classic density ramp |
 | `--no-strokes` | | pipeline: don't draw contours with stroke characters |
 | `--color` | | 24-bit ANSI color |
@@ -324,7 +326,7 @@ legacy/                  the original MNIST diffusion notebook + data script + D
 
 | model | used for | license |
 |---|---|---|
-| AsciiNet (this repo) | image → ASCII | this repo's license |
+| AsciiNet (this repo; weights on [Hugging Face](https://huggingface.co/SamuelReeder/asciinet)) | image → ASCII | this repo's license (GPL-3.0) |
 | [SANA-Sprint 0.6B](https://huggingface.co/Efficient-Large-Model/Sana_Sprint_0.6B_1024px_diffusers) (pinned revision) + its [Gemma-2-2B](https://huggingface.co/google/gemma-2-2b-it) text encoder | text → picture (prompts only) | Apache-2.0 / Gemma Terms of Use |
 | [SigLIP ViT-B/16](https://huggingface.co/timm/ViT-B-16-SigLIP) (open_clip) | prompt reranking, `--focus select` | Apache-2.0 |
 | [BiRefNet](https://huggingface.co/ZhengPeng7/BiRefNet) (pinned revision; loads its own code via `trust_remote_code`) | the pipeline's subject matte; training labels | MIT |
