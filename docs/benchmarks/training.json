@@ -1,0 +1,37 @@
+{
+  "phase1": {
+    "step": 30000,
+    "recorded_args": {
+      "steps": 30000,
+      "cells": 40000,
+      "lr": 0.0008,
+      "wd": 0.05,
+      "warmup": 1000,
+      "workers": 6,
+      "out": "checkpoints/asciinet.pt",
+      "resume": true,
+      "ckpt": false,
+      "vram_gb": 10.5
+    }
+  },
+  "phase2": {
+    "step": 20000,
+    "recorded_args": {
+      "steps": 20000,
+      "cells": 40000,
+      "lr": 0.0004,
+      "wd": 0.05,
+      "warmup": 500,
+      "workers": 6,
+      "out": "checkpoints/asciinet2_train.pt",
+      "export": "checkpoints/asciinet2.pt",
+      "resume": true,
+      "init": "checkpoints/asciinet_train.pt",
+      "matte_w": 1.0,
+      "dice_w": 0.5,
+      "ckpt": false,
+      "vram_gb": 10.5
+    }
+  },
+  "notes": "Historical run: RNG seed and all dataset revisions were not recorded. Paths are original relative paths, predating release organization."
+}

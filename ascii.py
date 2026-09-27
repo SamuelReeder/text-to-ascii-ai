@@ -22,7 +22,7 @@ def load_input(src: str):
         return Image.open(io.BytesIO(sys.stdin.buffer.read()))
     if src.startswith(("http://", "https://")):
         import requests
-        r = requests.get(src, timeout=30, headers={"User-Agent": "text-to-ascii-ai"})
+        r = requests.get(src, timeout=30, headers={"User-Agent": "asciinet"})
         r.raise_for_status()
         return Image.open(io.BytesIO(r.content))
     return Image.open(src)
@@ -40,14 +40,11 @@ def quiet_libraries():
     os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
     os.environ.setdefault("DIFFUSERS_VERBOSITY", "error")
     warnings.filterwarnings("ignore")
-    import diffusers
-    import transformers
     from huggingface_hub.utils import enable_progress_bars
     from huggingface_hub.utils import logging as hub_logging
     hub_logging.set_verbosity_error()  # e.g. "unauthenticated requests" on every run
-    transformers.utils.logging.disable_progress_bar()
-    diffusers.utils.logging.disable_progress_bar()
-    enable_progress_bars()  # the calls above also turn off Hugging Face download bars; keep those
+    # Image-only installs do not need the optional text-generation libraries.
+    enable_progress_bars()
 
 
 def make_converter(args, Converter):
@@ -98,6 +95,10 @@ def main():
     args = ap.parse_args()
     if not args.image and not args.prompt:
         ap.error("give an image (path/URL/-) or --prompt TEXT")
+    if args.width is not None and not 16 <= args.width <= 512:
+        ap.error("--width must be between 16 and 512")
+    if not 1 <= args.candidates <= 8:
+        ap.error("--candidates must be between 1 and 8")
 
     quiet_libraries()
     import torch
