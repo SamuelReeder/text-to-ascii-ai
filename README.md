@@ -1,4 +1,4 @@
-# Text-to-ASCII AI
+# AsciiNet
 
 Turn **any image** — or a **text prompt** — into ASCII art that people can actually recognize, at
 any size from a 16-column thumbnail to a full terminal.

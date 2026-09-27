@@ -22,7 +22,7 @@ def load_input(src: str):
         return Image.open(io.BytesIO(sys.stdin.buffer.read()))
     if src.startswith(("http://", "https://")):
         import requests
-        r = requests.get(src, timeout=30, headers={"User-Agent": "text-to-ascii-ai"})
+        r = requests.get(src, timeout=30, headers={"User-Agent": "asciinet"})
         r.raise_for_status()
         return Image.open(io.BytesIO(r.content))
     return Image.open(src)
