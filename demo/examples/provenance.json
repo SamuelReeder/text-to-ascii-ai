@@ -1,0 +1,49 @@
+{
+  "sourceCommit": "c8d452ae12cbe330d4b0266f2776832ae1a9834c",
+  "checkpointSha256": "b12652e2cf9af5357e928a65b651dae9ed00e08f03ff1513d5f471898921b063",
+  "checkpointStep": 20000,
+  "parameters": 27869358,
+  "generatedAt": "2026-09-27",
+  "selection": "Existing SANA-Sprint benchmark candidates selected by the teacher at 80 columns; both AsciiNet widths use the same image. Curated illustrations, not an evaluation set.",
+  "samples": [
+    {
+      "id": "butterfly",
+      "name": "Butterfly",
+      "prompt": "a butterfly",
+      "image": "butterfly.jpg",
+      "alt": "SANA-Sprint generated illustration of a butterfly.",
+      "sourcePath": "runs/t2i/sana-sprint/017_0.jpg",
+      "sourceSha256": "1c54b6486494a98d8bc58bc011ae7d40ac65a69f64b5f4b5131b3481417395d9"
+    },
+    {
+      "id": "helicopter",
+      "name": "Helicopter",
+      "prompt": "a helicopter",
+      "image": "helicopter.jpg",
+      "alt": "SANA-Sprint generated illustration of a helicopter.",
+      "sourcePath": "runs/t2i/sana-sprint/043_1.jpg",
+      "sourceSha256": "b87bb39b9758d686ae32e688aa25619375b542e4966a5ef26ed462dc6e7d10e2"
+    },
+    {
+      "id": "octopus",
+      "name": "Octopus",
+      "prompt": "a octopus",
+      "image": "octopus.jpg",
+      "alt": "SANA-Sprint generated illustration of a octopus.",
+      "sourcePath": "runs/t2i/sana-sprint/005_2.jpg",
+      "sourceSha256": "6830d369e28c18f74e74fd3be90949420d251630d0b4867cb6978523ef4d3d33"
+    }
+  ],
+  "imageModel": {
+    "id": "Efficient-Large-Model/Sana_Sprint_0.6B_1024px_diffusers",
+    "revision": "aa76e7f4f4928f378716b6716a2130fba3caf5b1",
+    "steps": 2,
+    "seed": 0,
+    "candidates": 4,
+    "promptStyle": "{p}, simple flat vector illustration, bold solid shapes, thick clean outlines, minimal detail, centered, full view, plain white background"
+  },
+  "releasedWeights": {
+    "id": "SamuelReeder/asciinet",
+    "revision": "55c4588acef906144ab5982049c6adf7c22a54a8"
+  }
+}

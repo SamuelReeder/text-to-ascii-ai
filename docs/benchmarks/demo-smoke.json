@@ -1,0 +1,25 @@
+{
+  "date": "2026-09-27",
+  "hardware": "NVIDIA RTX 5080, local Gradio API; not ZeroGPU",
+  "model_revision": "55c4588acef906144ab5982049c6adf7c22a54a8",
+  "candidates_per_prompt": 2,
+  "sequential_requests": [
+    {
+      "prompt": "a butterfly",
+      "width": 64,
+      "seed": 7,
+      "seconds": 22.08,
+      "grid_rows": 32,
+      "non_whitespace_characters": 649
+    },
+    {
+      "prompt": "an octopus",
+      "width": 64,
+      "seed": 7,
+      "seconds": 1.8,
+      "grid_rows": 32,
+      "non_whitespace_characters": 744
+    }
+  ],
+  "note": "End-to-end local timings include request/queue overhead. First request includes warmup; not a hosted latency estimate."
+}

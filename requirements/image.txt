@@ -1,0 +1,6 @@
+# Minimal image-to-ASCII runtime; PyTorch comes from the chosen CPU/CUDA index.
+numpy==2.5.2
+pillow==12.2.0
+requests==2.34.2
+huggingface_hub==1.33.0
+safetensors==0.8.0

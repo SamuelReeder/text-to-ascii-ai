@@ -18,6 +18,16 @@ from .pipeline import CHARSET, Converter, Options
 
 DEFAULT_CKPT = Path(__file__).resolve().parents[1] / "checkpoints" / "asciinet.pt"
 HF_REPO = "SamuelReeder/asciinet"  # the released weights: model.safetensors + config.json
+HF_REVISION = "55c4588acef906144ab5982049c6adf7c22a54a8"
+
+
+def download_checkpoint() -> Path:
+    """Fetch the config and weights from the same immutable release snapshot."""
+    from huggingface_hub import snapshot_download
+    snapshot = snapshot_download(
+        HF_REPO, revision=HF_REVISION, allow_patterns=["config.json", "model.safetensors"]
+    )
+    return Path(snapshot) / "model.safetensors"
 
 
 def find_checkpoint() -> Path | None:
@@ -25,9 +35,7 @@ def find_checkpoint() -> Path | None:
     if DEFAULT_CKPT.exists():
         return DEFAULT_CKPT
     try:
-        from huggingface_hub import hf_hub_download
-        hf_hub_download(HF_REPO, "config.json")
-        return Path(hf_hub_download(HF_REPO, "model.safetensors"))
+        return download_checkpoint()
     except Exception as e:  # offline, or the Hub is unreachable
         print(f"warning: could not fetch AsciiNet weights from {HF_REPO} ({type(e).__name__})", file=sys.stderr)
         return None

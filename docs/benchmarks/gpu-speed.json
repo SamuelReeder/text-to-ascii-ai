@@ -1,0 +1,28 @@
+{
+  "source_revision": "c8d452ae12cbe330d4b0266f2776832ae1a9834c",
+  "method": "scripts/bench_speed.py; first 40 records from eval manifest sampled every 250 rows; one warm-up per width; CUDA synchronized",
+  "hardware": "NVIDIA GeForce RTX 5080",
+  "sample_count": 40,
+  "source_log": "runs/logs/bench.log (local, not committed)",
+  "measurements": {
+    "AsciiNet": {
+      "ms_per_image": {
+        "32": 13,
+        "80": 24,
+        "120": 34
+      },
+      "load_s": 0.6,
+      "peak_vram_gib": 0.31
+    },
+    "pipeline": {
+      "ms_per_image": {
+        "32": 100,
+        "80": 108,
+        "120": 110
+      },
+      "load_s": 1.8,
+      "peak_vram_gib": 1.62
+    }
+  },
+  "limitations": "Historical rounded timings transcribed from the original log; not cloud latency. Model loading excluded from per-image timings."
+}

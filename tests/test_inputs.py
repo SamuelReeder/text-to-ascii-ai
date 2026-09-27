@@ -1,11 +1,12 @@
 """Robustness: every kind of input image converts without errors into a sane grid.
 
-run: python -m pytest tests -q   (or: python tests/test_inputs.py)
+run: python -m pytest tests -q -m integration
 """
 import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -30,7 +31,8 @@ def shapes_image(w=320, h=240, mode="RGB"):
     return im.convert(mode)
 
 
-def cases():
+def cases(tmp_path):
+    rng = np.random.default_rng(0)
     rgba = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
     ImageDraw.Draw(rgba).ellipse((40, 40, 216, 216), fill=(30, 30, 200, 255))
     gif = [shapes_image(), shapes_image().transpose(Image.FLIP_LEFT_RIGHT)]
@@ -42,21 +44,22 @@ def cases():
         "palette": shapes_image(mode="P"),
         "transparent": rgba,
         "16bit": grad16,
-        "float": Image.fromarray(np.random.rand(64, 64).astype(np.float32), "F"),
+        "float": Image.fromarray(rng.random((64, 64)).astype(np.float32), "F"),
         "tiny": shapes_image(8, 6),
         "panorama": shapes_image(2000, 150),
         "tall": shapes_image(120, 2400),
         "black": Image.new("RGB", (300, 200), 0),
         "white": Image.new("RGB", (300, 200), (255, 255, 255)),
-        "noise": Image.fromarray((np.random.rand(300, 300, 3) * 255).astype(np.uint8)),
+        "noise": Image.fromarray((rng.random((300, 300, 3)) * 255).astype(np.uint8)),
         "huge": shapes_image(6000, 4000),
-        "gif": (gif[0].save("/tmp/_t.gif", save_all=True, append_images=gif[1:]), Image.open("/tmp/_t.gif"))[1],
+        "gif": (gif[0].save(tmp_path / "input.gif", save_all=True, append_images=gif[1:]), Image.open(tmp_path / "input.gif"))[1],
     }
 
 
-def test_all_inputs():
+@pytest.mark.integration
+def test_all_inputs(tmp_path):
     c = conv()
-    for name, img in cases().items():
+    for name, img in cases(tmp_path).items():
         for cols in (40, 100):
             for focus in ("select", "off"):
                 for bg in ("dark", "light"):
@@ -67,7 +70,8 @@ def test_all_inputs():
                     assert all(32 <= ord(ch) < 127 for ch in txt.replace("\n", "")), name
 
 
-def test_shapes_have_ink_and_background_is_empty():
+@pytest.mark.integration
+def test_shapes_have_ink_and_background_is_empty(tmp_path):
     c = conv()
     ids = c.ids(shapes_image(640, 480), Options(cols=80, focus="off"))
     txt = ids_to_text(ids, c.chars).split("\n")
@@ -76,15 +80,15 @@ def test_shapes_have_ink_and_background_is_empty():
     assert corner.strip() == ""  # white background became empty space on a dark terminal
 
 
-def test_neural_engine_all_inputs():
+@pytest.mark.integration
+def test_neural_engine_all_inputs(tmp_path):
     """The trained AsciiNet handles the same odd inputs, at small and large widths."""
-    import pytest
     from asciiart.neural import NeuralConverter, find_checkpoint
     ckpt = find_checkpoint()
     if ckpt is None:
         pytest.skip("no AsciiNet weights (train them with scripts/train.py, or go online to download them)")
     c = NeuralConverter(ckpt)
-    for name, img in cases().items():
+    for name, img in cases(tmp_path).items():
         for cols in (16, 40, 100):
             for focus in ("auto", "off"):
                 for bg in ("dark", "light"):
@@ -97,15 +101,7 @@ def test_neural_engine_all_inputs():
     assert (ids != c.chars.index(" ")).sum() > 100  # the shapes are drawn
 
 
-def test_load_modes():
-    for name, img in cases().items():
+def test_load_modes(tmp_path):
+    for name, img in cases(tmp_path).items():
         out = load_image(img)
         assert out.mode == "RGB", name
-
-
-if __name__ == "__main__":
-    test_load_modes()
-    test_shapes_have_ink_and_background_is_empty()
-    test_all_inputs()
-    test_neural_engine_all_inputs()
-    print("ok")

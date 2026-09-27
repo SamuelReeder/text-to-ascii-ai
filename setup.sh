@@ -1,10 +1,35 @@
 #!/usr/bin/env bash
-# Creates the `ascii` conda env (Python 3.12, PyTorch 2.13 + CUDA 13) used by this repo.
-# RTX 50-series (Blackwell) GPUs need CUDA >= 12.8 builds of PyTorch; cu130 works for 30/40/50 series.
+# An isolated CPU image converter by default; opt into CUDA and larger profiles.
 set -euo pipefail
-CONDA="${CONDA_EXE:-$HOME/miniconda3/bin/conda}"
-"$CONDA" create -y -n ascii python=3.12
-ENV_PY="$("$CONDA" run -n ascii python -c 'import sys; print(sys.executable)')"
-"$ENV_PY" -m pip install torch==2.13.0 torchvision==0.28.0 --index-url https://download.pytorch.org/whl/cu130
-"$ENV_PY" -m pip install -r "$(dirname "$0")/requirements.txt"
-echo "done: conda activate ascii && python ascii.py --help"
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+device=cpu
+profile=image
+venv="$ROOT/.venv"
+while (( $# )); do
+  case "$1" in
+    --cpu) device=cpu; shift ;;
+    --cuda) device=cu130; shift ;;
+    --profile|--venv)
+      if (( $# < 2 )); then echo "Missing value for $1" >&2; exit 2; fi
+      if [[ "$1" == --profile ]]; then profile="$2"; else venv="$2"; fi
+      shift 2 ;;
+    -h|--help)
+      echo 'Usage: ./setup.sh [--cpu|--cuda] [--profile image|pipeline|text|all|demo] [--venv PATH]'
+      echo 'Requires Python 3.12+ and a monospace font (Ubuntu: fonts-dejavu-core).'
+      exit 0 ;;
+    *) echo "Unknown option: $1" >&2; exit 2 ;;
+  esac
+done
+case "$profile" in
+  image|pipeline|text|demo) requirements="$ROOT/requirements/$profile.txt" ;;
+  all) requirements="$ROOT/requirements.txt" ;;
+  *) echo "Unknown profile: $profile" >&2; exit 2 ;;
+esac
+"${PYTHON:-python3}" -m venv "$venv"
+py="$venv/bin/python"
+"$py" -m pip install --upgrade pip
+torch_packages=(torch==2.13.0)
+if [[ "$profile" != image ]]; then torch_packages+=(torchvision==0.28.0); fi
+"$py" -m pip install "${torch_packages[@]}" --index-url "https://download.pytorch.org/whl/$device"
+"$py" -m pip install -r "$requirements"
+echo "Ready: source '$venv/bin/activate'"

@@ -1,0 +1,31 @@
+{
+  "cpu_threads": 2,
+  "cpu_affinity_count": 2,
+  "cpu_model": "AMD Ryzen 7 9800X3D 8-Core Processor",
+  "torch": "2.13.0+cu130",
+  "load_s": 0.644,
+  "peak_rss_mib": 743,
+  "input": "runs/t2i/sana-sprint/000_0.jpg",
+  "input_size": [
+    512,
+    512
+  ],
+  "warm_runs_per_width": 8,
+  "results": [
+    {
+      "cols": 32,
+      "median_s": 0.077,
+      "max_s": 0.091
+    },
+    {
+      "cols": 64,
+      "median_s": 0.109,
+      "max_s": 0.119
+    },
+    {
+      "cols": 80,
+      "median_s": 0.139,
+      "max_s": 0.163
+    }
+  ]
+}
