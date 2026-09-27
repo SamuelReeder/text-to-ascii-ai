@@ -28,8 +28,9 @@ esac
 "${PYTHON:-python3}" -m venv "$venv"
 py="$venv/bin/python"
 "$py" -m pip install --upgrade pip
-torch_packages=(torch==2.13.0)
-if [[ "$profile" != image ]]; then torch_packages+=(torchvision==0.28.0); fi
+# Include the build tag: an installed CPU wheel must not satisfy a later CUDA install.
+torch_packages=("torch==2.13.0+$device")
+if [[ "$profile" != image ]]; then torch_packages+=("torchvision==0.28.0+$device"); fi
 "$py" -m pip install "${torch_packages[@]}" --index-url "https://download.pytorch.org/whl/$device"
 "$py" -m pip install -r "$requirements"
 echo "Ready: source '$venv/bin/activate'"
